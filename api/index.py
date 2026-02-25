@@ -62,7 +62,7 @@ def generate_qr(
     
     # Add inner eye SVG if requested
     if inner_eye_shape:
-        svg_path = Path(__file__).parent / "inner" / f"{inner_eye_shape}.svg"
+        svg_path = Path(__file__).parent / "api/inner" / f"{inner_eye_shape}.svg"
         debug_info.append(f"Looking for inner: {svg_path}")
         if svg_path.exists():
             svg_content = svg_path.read_text()
@@ -73,7 +73,7 @@ def generate_qr(
     
     # Add outer eye SVG if requested  
     if outer_eye_shape:
-        svg_path = Path(__file__).parent / "outer" / f"{outer_eye_shape}.svg"
+        svg_path = Path(__file__).parent / "api/outer" / f"{outer_eye_shape}.svg"
         debug_info.append(f"Looking for outer: {svg_path}")
         if svg_path.exists():
             svg_content = svg_path.read_text()
