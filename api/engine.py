@@ -3,7 +3,7 @@ import qrcode
 import math
 import cairosvg
 from io import BytesIO
-from assets import resolve_color, DEFAULT_BG, DEFAULT_FG, INNER_DIR, OUTER_DIR, get_svg_path
+from api.assets import resolve_color, DEFAULT_BG, DEFAULT_FG, INNER_DIR, OUTER_DIR, get_svg_path
 
 
 def hex_to_rgb(hex_color: str):
