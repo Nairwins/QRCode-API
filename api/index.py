@@ -1,14 +1,22 @@
 from fastapi import FastAPI, Query
 from fastapi.responses import StreamingResponse
-from api.engine import build_qr_image
-from api.assets import DEFAULT_SIZE, DEFAULT_BORDER, DEFAULT_GRADIENT
+try:
+    from api.engine import build_qr_image
+    from api.assets import DEFAULT_SIZE, DEFAULT_BORDER, DEFAULT_GRADIENT, DEFAULT_SHAPE, DOT_SHAPES
+except ModuleNotFoundError:
+    from engine import build_qr_image
+    from assets import DEFAULT_SIZE, DEFAULT_BORDER, DEFAULT_GRADIENT, DEFAULT_SHAPE, DOT_SHAPES
 
+    
 app = FastAPI()
 
 
 @app.get("/")
 def root():
-    return {"message": "QR Code Generator API is running!"}
+    return {
+        "message": "QR Code Generator API is running!",
+        "available_shapes": DOT_SHAPES,
+    }
 
 
 @app.get("/generate")
@@ -22,6 +30,7 @@ def generate_qr(
     gradient_type: str = Query(DEFAULT_GRADIENT, description="horizontal | vertical | diagonal | diagonal_reverse | center | center_reverse"),
     eye_outer: str = Query(None, description="Outer eye color — name or hex (optional)"),
     eye_inner: str = Query(None, description="Inner eye color — name or hex (optional)"),
+    dot_shape: str = Query(DEFAULT_SHAPE, description="square | circle | dot | rounded | smooth | diamond | diamond_small | star4 | star5 | cross | heart | triangle_up | triangle_down | hexagon | octagon | arrow_right | vertical_line | horizontal_line | x_shape | ring | bars"),
 ):
     buffer = build_qr_image(
         data=data,
@@ -33,6 +42,7 @@ def generate_qr(
         gradient_type=gradient_type,
         eye_outer=eye_outer,
         eye_inner=eye_inner,
+        dot_shape=dot_shape,
     )
 
     return StreamingResponse(buffer, media_type="image/png")

@@ -3,6 +3,7 @@ DEFAULT_BG = "#ffffff"
 DEFAULT_SIZE = 10
 DEFAULT_BORDER = 4
 DEFAULT_GRADIENT = "horizontal"
+DEFAULT_SHAPE = "square"
 
 NAMED_COLORS = {
     "black": "#000000",
@@ -37,6 +38,30 @@ NAMED_COLORS = {
     "crimson": "#dc143c",
 }
 
+DOT_SHAPES = [
+    "square",           # classic filled square
+    "circle",           # full circle filling the cell
+    "dot",              # small circle (60% of cell)
+    "rounded",          # square with rounded corners
+    "smooth",           # square with very smooth/pill rounded corners
+    "diamond",          # rotated 45° square
+    "diamond_small",    # smaller diamond with padding
+    "star4",            # 4-pointed star
+    "star5",            # 5-pointed star (classic)
+    "cross",            # plus / cross shape
+    "heart",            # heart shape
+    "triangle_up",      # upward triangle
+    "triangle_down",    # downward triangle
+    "hexagon",          # flat-top hexagon
+    "octagon",          # 8-sided shape
+    "arrow_right",      # arrow pointing right
+    "vertical_line",    # tall thin bar
+    "horizontal_line",  # wide thin bar
+    "x_shape",          # X / times shape
+    "ring",             # hollow circle / donut
+    "bars",             # three horizontal mini-bars
+]
+
 GRADIENT_TYPES = [
     "horizontal",
     "vertical",
@@ -56,15 +81,12 @@ def resolve_color(value: str, fallback: str = DEFAULT_FG) -> str:
     if value in NAMED_COLORS:
         return NAMED_COLORS[value]
 
-    # Handle hex with or without #
     hex_val = value if value.startswith("#") else f"#{value}"
-    valid_lengths = [4, 7]  # #rgb or #rrggbb
-    if hex_val.startswith("#") and len(hex_val) in valid_lengths:
+    if hex_val.startswith("#") and len(hex_val) in [4, 7]:
         try:
             int(hex_val[1:], 16)
             return hex_val
         except ValueError:
             pass
 
-    # Unrecognised — default to black
     return fallback
