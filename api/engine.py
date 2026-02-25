@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw
 import qrcode
 from io import BytesIO
-from assets import resolve_color, DEFAULT_BG, DEFAULT_FG
+from api.assets import resolve_color, DEFAULT_BG, DEFAULT_FG
 
 
 def hex_to_rgb(hex_color: str):

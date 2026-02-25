@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query
 from fastapi.responses import StreamingResponse
-from engine import build_qr_image
-from assets import DEFAULT_SIZE, DEFAULT_BORDER, DEFAULT_GRADIENT
+from api.engine import build_qr_image
+from api.assets import DEFAULT_SIZE, DEFAULT_BORDER, DEFAULT_GRADIENT
 
 app = FastAPI()
 
