@@ -1,0 +1,15 @@
+# Virtual environments
+.code/
+.venv/
+env/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+
+# Vercel
+.vercel/
