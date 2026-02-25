@@ -1,10 +1,9 @@
 from PIL import Image, ImageDraw
 import qrcode
 import math
-from wand.image import Image as WandImage
-from wand.color import Color
+import cairosvg
 from io import BytesIO
-from assets import resolve_color, DEFAULT_BG, DEFAULT_FG, INNER_DIR, OUTER_DIR, get_svg_path
+from api.assets import resolve_color, DEFAULT_BG, DEFAULT_FG, INNER_DIR, OUTER_DIR, get_svg_path
 
 
 def hex_to_rgb(hex_color: str):
@@ -28,10 +27,11 @@ def render_svg(svg_path: str, width: int, height: int, color: str) -> Image.Imag
 
     svg_content = svg_content.replace("currentColor", color)
 
-    with WandImage(blob=svg_content.encode(), format="svg", width=width, height=height) as wand_img:
-        wand_img.background_color = Color("transparent")
-        wand_img.format = "png"
-        png_bytes = wand_img.make_blob()
+    png_bytes = cairosvg.svg2png(
+        bytestring=svg_content.encode(),
+        output_width=width,
+        output_height=height,
+    )
 
     return Image.open(BytesIO(png_bytes)).convert("RGBA")
 
@@ -176,38 +176,37 @@ def draw_eyes(img, box_size, border, modules_count, outer_color, inner_color, bg
     draw = ImageDraw.Draw(img)
 
     eye_positions = [
-        (0, 0, 0),
-        (0, modules_count - 7, 90),
-        (modules_count - 7, 0, 270),
+        (0, 0),
+        (0, modules_count - 7),
+        (modules_count - 7, 0),
     ]
 
     outer_size = 7 * box_size
     inner_size = 3 * box_size
 
-    for (row, col, angle) in eye_positions:
+    for (row, col) in eye_positions:
         x = (col + border) * box_size
         y = (row + border) * box_size
 
+        # Outer eye
         if outer_svg:
             svg_img = render_svg(outer_svg, outer_size, outer_size, outer_color)
-            if angle != 0:
-                svg_img = svg_img.rotate(-angle, expand=False)
             img.paste(svg_img, (x, y), svg_img)
         else:
             draw.rectangle([x, y, x+outer_size-1, y+outer_size-1], fill=hex_to_rgb(outer_color))
 
+        # White gap between outer and inner
         draw.rectangle(
             [x+box_size, y+box_size, x+6*box_size-1, y+6*box_size-1],
             fill=bg_color,
         )
 
+        # Inner eye
         ix = x + 2 * box_size
         iy = y + 2 * box_size
 
         if inner_svg:
             svg_img = render_svg(inner_svg, inner_size, inner_size, inner_color)
-            if angle != 0:
-                svg_img = svg_img.rotate(-angle, expand=False)
             img.paste(svg_img, (ix, iy), svg_img)
         else:
             draw.rectangle([ix, iy, ix+inner_size-1, iy+inner_size-1], fill=hex_to_rgb(inner_color))

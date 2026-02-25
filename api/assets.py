@@ -7,8 +7,8 @@ DEFAULT_BORDER = 4
 DEFAULT_GRADIENT = "horizontal"
 DEFAULT_SHAPE = "square"
 
-INNER_DIR = os.path.join(os.path.dirname(__file__), "inner")
-OUTER_DIR = os.path.join(os.path.dirname(__file__), "outer")
+INNER_DIR = os.path.join(os.path.dirname(__file__), "api/inner")
+OUTER_DIR = os.path.join(os.path.dirname(__file__), "api/outer")
 
 NAMED_COLORS = {
     "black": "#000000",
