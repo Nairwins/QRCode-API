@@ -1,14 +1,9 @@
-import os
-
 DEFAULT_FG = "#000000"
 DEFAULT_BG = "#ffffff"
 DEFAULT_SIZE = 10
 DEFAULT_BORDER = 4
 DEFAULT_GRADIENT = "horizontal"
 DEFAULT_SHAPE = "square"
-
-INNER_DIR = os.path.join(os.path.dirname(__file__), "api/inner")
-OUTER_DIR = os.path.join(os.path.dirname(__file__), "api/outer")
 
 NAMED_COLORS = {
     "black": "#000000",
@@ -44,15 +39,36 @@ NAMED_COLORS = {
 }
 
 DOT_SHAPES = [
-    "square", "circle", "dot", "rounded", "smooth",
-    "diamond", "diamond_small", "star4", "star5", "cross",
-    "heart", "triangle_up", "triangle_down", "hexagon", "octagon",
-    "arrow_right", "vertical_line", "horizontal_line", "x_shape", "ring", "bars",
+    "square",           # classic filled square
+    "circle",           # full circle filling the cell
+    "dot",              # small circle (60% of cell)
+    "rounded",          # square with rounded corners
+    "smooth",           # square with very smooth/pill rounded corners
+    "diamond",          # rotated 45° square
+    "diamond_small",    # smaller diamond with padding
+    "star4",            # 4-pointed star
+    "star5",            # 5-pointed star (classic)
+    "cross",            # plus / cross shape
+    "heart",            # heart shape
+    "triangle_up",      # upward triangle
+    "triangle_down",    # downward triangle
+    "hexagon",          # flat-top hexagon
+    "octagon",          # 8-sided shape
+    "arrow_right",      # arrow pointing right
+    "vertical_line",    # tall thin bar
+    "horizontal_line",  # wide thin bar
+    "x_shape",          # X / times shape
+    "ring",             # hollow circle / donut
+    "bars",             # three horizontal mini-bars
 ]
 
 GRADIENT_TYPES = [
-    "horizontal", "vertical", "diagonal",
-    "diagonal_reverse", "center", "center_reverse",
+    "horizontal",
+    "vertical",
+    "diagonal",
+    "diagonal_reverse",
+    "center",
+    "center_reverse",
 ]
 
 
@@ -74,14 +90,3 @@ def resolve_color(value: str, fallback: str = DEFAULT_FG) -> str:
             pass
 
     return fallback
-
-
-def list_svg_shapes(folder: str) -> list:
-    if not os.path.isdir(folder):
-        return []
-    return [os.path.splitext(f)[0] for f in os.listdir(folder) if f.endswith(".svg")]
-
-
-def get_svg_path(folder: str, name: str) -> str | None:
-    path = os.path.join(folder, f"{name}.svg")
-    return path if os.path.isfile(path) else None

@@ -1,9 +1,11 @@
 from PIL import Image, ImageDraw
 import qrcode
 import math
-import cairosvg
 from io import BytesIO
-from api.assets import resolve_color, DEFAULT_BG, DEFAULT_FG, INNER_DIR, OUTER_DIR, get_svg_path
+try:
+    from api.assets import resolve_color, DEFAULT_BG, DEFAULT_FG
+except ImportError:
+    from assets import resolve_color, DEFAULT_BG, DEFAULT_FG
 
 
 def hex_to_rgb(hex_color: str):
@@ -21,21 +23,6 @@ def is_eye_module(row, col, n):
     return False
 
 
-def render_svg(svg_path: str, width: int, height: int, color: str) -> Image.Image:
-    with open(svg_path, "r") as f:
-        svg_content = f.read()
-
-    svg_content = svg_content.replace("currentColor", color)
-
-    png_bytes = cairosvg.svg2png(
-        bytestring=svg_content.encode(),
-        output_width=width,
-        output_height=height,
-    )
-
-    return Image.open(BytesIO(png_bytes)).convert("RGBA")
-
-
 def draw_dot(draw, x, y, box_size, shape, color):
     x1, y1 = x, y
     x2, y2 = x + box_size - 1, y + box_size - 1
@@ -45,93 +32,145 @@ def draw_dot(draw, x, y, box_size, shape, color):
 
     if shape == "square":
         draw.rectangle([x1, y1, x2, y2], fill=color)
+
     elif shape == "circle":
         draw.ellipse([x1, y1, x2, y2], fill=color)
+
     elif shape == "dot":
         pad = max(1, box_size // 5)
-        draw.ellipse([x1+pad, y1+pad, x2-pad, y2-pad], fill=color)
+        draw.ellipse([x1 + pad, y1 + pad, x2 - pad, y2 - pad], fill=color)
+
     elif shape == "rounded":
-        draw.rounded_rectangle([x1, y1, x2, y2], radius=box_size // 3, fill=color)
+        radius = box_size // 3
+        draw.rounded_rectangle([x1, y1, x2, y2], radius=radius, fill=color)
+
     elif shape == "smooth":
-        draw.rounded_rectangle([x1, y1, x2, y2], radius=int(box_size * 0.45), fill=color)
+        radius = int(box_size * 0.45)
+        draw.rounded_rectangle([x1, y1, x2, y2], radius=radius, fill=color)
+
     elif shape == "diamond":
-        draw.polygon([(cx, y1), (x2, cy), (cx, y2), (x1, cy)], fill=color)
+        points = [(cx, y1), (x2, cy), (cx, y2), (x1, cy)]
+        draw.polygon(points, fill=color)
+
     elif shape == "diamond_small":
         pad = box_size // 6
-        draw.polygon([(cx, y1+pad), (x2-pad, cy), (cx, y2-pad), (x1+pad, cy)], fill=color)
+        points = [
+            (cx, y1 + pad),
+            (x2 - pad, cy),
+            (cx, y2 - pad),
+            (x1 + pad, cy),
+        ]
+        draw.polygon(points, fill=color)
+
     elif shape == "star4":
         q = box_size // 4
-        draw.polygon([
-            (cx, y1), (cx+q*0.5, cy-q*0.5),
-            (x2, cy), (cx+q*0.5, cy+q*0.5),
-            (cx, y2), (cx-q*0.5, cy+q*0.5),
-            (x1, cy), (cx-q*0.5, cy-q*0.5),
-        ], fill=color)
+        points = [
+            (cx, y1),
+            (cx + q * 0.5, cy - q * 0.5),
+            (x2, cy),
+            (cx + q * 0.5, cy + q * 0.5),
+            (cx, y2),
+            (cx - q * 0.5, cy + q * 0.5),
+            (x1, cy),
+            (cx - q * 0.5, cy - q * 0.5),
+        ]
+        draw.polygon(points, fill=color)
+
     elif shape == "star5":
-        outer_r, inner_r = r, r * 0.4
-        pts = []
+        outer_r = r
+        inner_r = r * 0.4
+        points = []
         for i in range(10):
-            a = math.radians(-90 + i * 36)
-            ri = outer_r if i % 2 == 0 else inner_r
-            pts.append((cx + ri * math.cos(a), cy + ri * math.sin(a)))
-        draw.polygon(pts, fill=color)
+            angle = math.radians(-90 + i * 36)
+            radius_i = outer_r if i % 2 == 0 else inner_r
+            points.append((cx + radius_i * math.cos(angle), cy + radius_i * math.sin(angle)))
+        draw.polygon(points, fill=color)
+
     elif shape == "cross":
-        t = box_size // 3
-        draw.rectangle([x1, y1+t, x2, y2-t], fill=color)
-        draw.rectangle([x1+t, y1, x2-t, y2], fill=color)
+        third = box_size // 3
+        draw.rectangle([x1, y1 + third, x2, y2 - third], fill=color)
+        draw.rectangle([x1 + third, y1, x2 - third, y2], fill=color)
+
     elif shape == "heart":
-        scale = (box_size / 2) / 10
-        pts = []
+        hw = box_size / 2
+        scale = hw / 10
+        points = []
         for i in range(360):
-            a = math.radians(i)
-            hx = 16 * math.sin(a) ** 3
-            hy = -(13 * math.cos(a) - 5 * math.cos(2*a) - 2 * math.cos(3*a) - math.cos(4*a))
-            pts.append((cx + hx * scale * 0.6, cy + hy * scale * 0.6 + box_size * 0.05))
-        draw.polygon(pts, fill=color)
+            angle = math.radians(i)
+            hx = 16 * math.sin(angle) ** 3
+            hy = -(13 * math.cos(angle) - 5 * math.cos(2 * angle) - 2 * math.cos(3 * angle) - math.cos(4 * angle))
+            points.append((cx + hx * scale * 0.6, cy + hy * scale * 0.6 + box_size * 0.05))
+        draw.polygon(points, fill=color)
+
     elif shape == "triangle_up":
-        draw.polygon([(cx, y1), (x2, y2), (x1, y2)], fill=color)
+        points = [(cx, y1), (x2, y2), (x1, y2)]
+        draw.polygon(points, fill=color)
+
     elif shape == "triangle_down":
-        draw.polygon([(x1, y1), (x2, y1), (cx, y2)], fill=color)
+        points = [(x1, y1), (x2, y1), (cx, y2)]
+        draw.polygon(points, fill=color)
+
     elif shape == "hexagon":
-        pts = [(cx + r*math.cos(math.radians(i*60-30)), cy + r*math.sin(math.radians(i*60-30))) for i in range(6)]
-        draw.polygon(pts, fill=color)
+        points = []
+        for i in range(6):
+            angle = math.radians(i * 60 - 30)
+            points.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
+        draw.polygon(points, fill=color)
+
     elif shape == "octagon":
-        pts = [(cx + r*math.cos(math.radians(i*45-22.5)), cy + r*math.sin(math.radians(i*45-22.5))) for i in range(8)]
-        draw.polygon(pts, fill=color)
+        points = []
+        for i in range(8):
+            angle = math.radians(i * 45 - 22.5)
+            points.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
+        draw.polygon(points, fill=color)
+
     elif shape == "arrow_right":
         mid = box_size // 2
         tip = box_size // 3
-        draw.polygon([
-            (x1, y1+tip), (x1+mid, y1+tip), (x1+mid, y1),
+        points = [
+            (x1, y1 + tip),
+            (x1 + mid, y1 + tip),
+            (x1 + mid, y1),
             (x2, cy),
-            (x1+mid, y2), (x1+mid, y2-tip), (x1, y2-tip),
-        ], fill=color)
+            (x1 + mid, y2),
+            (x1 + mid, y2 - tip),
+            (x1, y2 - tip),
+        ]
+        draw.polygon(points, fill=color)
+
     elif shape == "vertical_line":
         pad = box_size // 3
-        draw.rectangle([x1+pad, y1, x2-pad, y2], fill=color)
+        draw.rectangle([x1 + pad, y1, x2 - pad, y2], fill=color)
+
     elif shape == "horizontal_line":
         pad = box_size // 3
-        draw.rectangle([x1, y1+pad, x2, y2-pad], fill=color)
+        draw.rectangle([x1, y1 + pad, x2, y2 - pad], fill=color)
+
     elif shape == "x_shape":
         t = max(2, box_size // 4)
-        draw.polygon([
-            (x1, y1), (x1+t, y1), (cx, cy-t*0.5),
-            (x2-t, y1), (x2, y1), (cx+t*0.5, cy),
-            (x2, y2), (x2-t, y2), (cx, cy+t*0.5),
-            (x1+t, y2), (x1, y2), (cx-t*0.5, cy),
-        ], fill=color)
+        points1 = [
+            (x1, y1), (x1 + t, y1), (cx, cy - t * 0.5),
+            (x2 - t, y1), (x2, y1), (cx + t * 0.5, cy),
+            (x2, y2), (x2 - t, y2), (cx, cy + t * 0.5),
+            (x1 + t, y2), (x1, y2), (cx - t * 0.5, cy),
+        ]
+        draw.polygon(points1, fill=color)
+
     elif shape == "ring":
         draw.ellipse([x1, y1, x2, y2], fill=color)
         pad = max(2, box_size // 4)
-        draw.ellipse([x1+pad, y1+pad, x2-pad, y2-pad], fill=(0, 0, 0, 0))
+        bg = color  # will be overwritten below — caller handles bg
+        draw.ellipse([x1 + pad, y1 + pad, x2 - pad, y2 - pad], fill=(0, 0, 0, 0))
+
     elif shape == "bars":
         bar_h = max(1, box_size // 5)
         gap = max(1, box_size // 8)
         total = 3 * bar_h + 2 * gap
-        sy = y1 + (box_size - total) // 2
+        start_y = y1 + (box_size - total) // 2
         for i in range(3):
-            by = sy + i * (bar_h + gap)
+            by = start_y + i * (bar_h + gap)
             draw.rectangle([x1, by, x2, by + bar_h], fill=color)
+
     else:
         draw.rectangle([x1, y1, x2, y2], fill=color)
 
@@ -139,6 +178,7 @@ def draw_dot(draw, x, y, box_size, shape, color):
 def create_gradient(width, height, color1, color2, gradient_type):
     r1, g1, b1 = hex_to_rgb(color1)
     r2, g2, b2 = hex_to_rgb(color2)
+
     gradient = Image.new("RGB", (width, height))
     pixels = gradient.load()
 
@@ -154,12 +194,14 @@ def create_gradient(width, height, color1, color2, gradient_type):
                 t = (x + (height - y)) / (width + height - 2)
             elif gradient_type == "center":
                 cx, cy = width / 2, height / 2
-                dist = ((x-cx)**2 + (y-cy)**2) ** 0.5
-                t = dist / ((cx**2 + cy**2) ** 0.5)
+                dist = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+                max_dist = (cx ** 2 + cy ** 2) ** 0.5
+                t = dist / max_dist
             elif gradient_type == "center_reverse":
                 cx, cy = width / 2, height / 2
-                dist = ((x-cx)**2 + (y-cy)**2) ** 0.5
-                t = 1 - dist / ((cx**2 + cy**2) ** 0.5)
+                dist = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+                max_dist = (cx ** 2 + cy ** 2) ** 0.5
+                t = 1 - (dist / max_dist)
             else:
                 t = x / (width - 1)
 
@@ -169,10 +211,11 @@ def create_gradient(width, height, color1, color2, gradient_type):
                 int(g1 + (g2 - g1) * t),
                 int(b1 + (b2 - b1) * t),
             )
+
     return gradient
 
 
-def draw_eyes(img, box_size, border, modules_count, outer_color, inner_color, bg_color, outer_svg=None, inner_svg=None):
+def draw_eyes(img, box_size, border, modules_count, outer_color, inner_color, bg_color):
     draw = ImageDraw.Draw(img)
 
     eye_positions = [
@@ -181,53 +224,32 @@ def draw_eyes(img, box_size, border, modules_count, outer_color, inner_color, bg
         (modules_count - 7, 0),
     ]
 
-    outer_size = 7 * box_size
-    inner_size = 3 * box_size
-
     for (row, col) in eye_positions:
         x = (col + border) * box_size
         y = (row + border) * box_size
 
-        # Outer eye
-        if outer_svg:
-            svg_img = render_svg(outer_svg, outer_size, outer_size, outer_color)
-            img.paste(svg_img, (x, y), svg_img)
-        else:
-            draw.rectangle([x, y, x+outer_size-1, y+outer_size-1], fill=hex_to_rgb(outer_color))
-
-        # White gap between outer and inner
-        draw.rectangle(
-            [x+box_size, y+box_size, x+6*box_size-1, y+6*box_size-1],
-            fill=bg_color,
-        )
-
-        # Inner eye
-        ix = x + 2 * box_size
-        iy = y + 2 * box_size
-
-        if inner_svg:
-            svg_img = render_svg(inner_svg, inner_size, inner_size, inner_color)
-            img.paste(svg_img, (ix, iy), svg_img)
-        else:
-            draw.rectangle([ix, iy, ix+inner_size-1, iy+inner_size-1], fill=hex_to_rgb(inner_color))
+        draw.rectangle([x, y, x + 7 * box_size - 1, y + 7 * box_size - 1], fill=outer_color)
+        draw.rectangle([x + box_size, y + box_size, x + 6 * box_size - 1, y + 6 * box_size - 1], fill=bg_color)
+        draw.rectangle([x + 2 * box_size, y + 2 * box_size, x + 5 * box_size - 1, y + 5 * box_size - 1], fill=inner_color)
 
 
 def build_qr_image(
-    data, size, border, fg_color, bg_color,
-    gradient_color=None, gradient_type="horizontal",
-    eye_outer=None, eye_inner=None,
-    dot_shape="square",
-    eye_outer_shape=None, eye_inner_shape=None,
+    data: str,
+    size: int,
+    border: int,
+    fg_color: str,
+    bg_color: str,
+    gradient_color: str = None,
+    gradient_type: str = "horizontal",
+    eye_outer: str = None,
+    eye_inner: str = None,
+    dot_shape: str = "square",
 ) -> BytesIO:
     fg = resolve_color(fg_color, DEFAULT_FG)
     bg = resolve_color(bg_color, DEFAULT_BG)
     grad = resolve_color(gradient_color, None) if gradient_color else None
-    outer_color = resolve_color(eye_outer, fg) if eye_outer else fg
-    inner_color = resolve_color(eye_inner, fg) if eye_inner else fg
-    bg_rgb = hex_to_rgb(bg)
-
-    outer_svg = get_svg_path(OUTER_DIR, eye_outer_shape) if eye_outer_shape else None
-    inner_svg = get_svg_path(INNER_DIR, eye_inner_shape) if eye_inner_shape else None
+    outer = resolve_color(eye_outer, fg) if eye_outer else fg
+    inner = resolve_color(eye_inner, fg) if eye_inner else fg
 
     qr = qrcode.QRCode(
         version=1,
@@ -240,21 +262,31 @@ def build_qr_image(
 
     matrix = qr.get_matrix()
     n = len(matrix)
+    img_size = (n + 2 * border) * size  # border already embedded in matrix via QRCode border param
+    # Actually qr.get_matrix() includes the quiet zone set by `border`
+    # so total size is just n * size
     total = n * size
 
+    bg_rgb = hex_to_rgb(bg)
+    fg_rgb = hex_to_rgb(fg)
+
     if grad:
+        # Draw mask with custom shapes
         mask_img = Image.new("L", (total, total), 0)
         mask_draw = ImageDraw.Draw(mask_img)
 
         for row in range(n):
             for col in range(n):
                 if matrix[row][col] and not is_eye_module(row - border, col - border, n - 2 * border):
-                    draw_dot(mask_draw, col * size, row * size, size, dot_shape, 255)
+                    x = col * size
+                    y = row * size
+                    draw_dot(mask_draw, x, y, size, dot_shape, 255)
 
         result = Image.new("RGB", (total, total), bg_rgb)
         gradient = create_gradient(total, total, fg, grad, gradient_type)
         result.paste(gradient, (0, 0), mask_img)
         final_img = result
+
     else:
         final_img = Image.new("RGB", (total, total), bg_rgb)
         draw = ImageDraw.Draw(final_img)
@@ -262,14 +294,16 @@ def build_qr_image(
         for row in range(n):
             for col in range(n):
                 if matrix[row][col] and not is_eye_module(row - border, col - border, n - 2 * border):
-                    draw_dot(draw, col * size, row * size, size, dot_shape, hex_to_rgb(fg))
+                    x = col * size
+                    y = row * size
+                    draw_dot(draw, x, y, size, dot_shape, fg_rgb)
 
     draw_eyes(
         final_img, size, border,
         n - 2 * border,
-        outer_color, inner_color, bg_rgb,
-        outer_svg=outer_svg,
-        inner_svg=inner_svg,
+        hex_to_rgb(outer),
+        hex_to_rgb(inner),
+        bg_rgb,
     )
 
     buffer = BytesIO()
