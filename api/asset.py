@@ -1,6 +1,6 @@
 from pathlib import Path
 
-ICON_DIR = Path(__file__).parent / "api/icon"
+ICON_DIR = Path(__file__).parent / "icon"
 
 ICONS = {
     "gold": ICON_DIR / "gold.png",
