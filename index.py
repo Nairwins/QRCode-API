@@ -1,4 +1,5 @@
 import io
+import cairosvg
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 from api.engine import build_qr
