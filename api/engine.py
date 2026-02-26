@@ -226,7 +226,18 @@ def build_qr(
         cy_logo = qr_h // 2
         pos = (cx_logo - lw // 2, cy_logo - lh // 2)
 
-        # Paste logo directly on top, no background clearing
+        # Circular clear zone underneath
+        clear_r = int(logo_size * 0.58)
+        clear_mask = Image.new("L", (qr_w, qr_h), 0)
+        ImageDraw.Draw(clear_mask).ellipse(
+            [cx_logo - clear_r, cy_logo - clear_r,
+             cx_logo + clear_r, cy_logo + clear_r],
+            fill=255
+        )
+        bg_layer = Image.new("RGB", (qr_w, qr_h), bg_color)
+        img.paste(bg_layer, mask=clear_mask)
+
+        # Paste logo as-is on top, no clipping
         img.paste(logo_img, pos, mask=logo_img)
 
     buf = io.BytesIO()
