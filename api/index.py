@@ -1,8 +1,8 @@
 import io
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import Response
-from engine import build_qr
-from asset import ICONS
+from api.engine import build_qr
+from api.asset import ICONS
 
 app = FastAPI()
 
