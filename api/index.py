@@ -1,57 +1,43 @@
-from fastapi import FastAPI, Query, File, UploadFile
-from fastapi.responses import StreamingResponse
-from typing import Optional
-try:
-    from api.engine import build_qr_image
-    from api.assets import DEFAULT_SIZE, DEFAULT_BORDER, DEFAULT_GRADIENT, DEFAULT_SHAPE, DOT_SHAPES
-except ImportError:
-    from engine import build_qr_image
-    from assets import DEFAULT_SIZE, DEFAULT_BORDER, DEFAULT_GRADIENT, DEFAULT_SHAPE, DOT_SHAPES
+import io
+import qrcode
+from fastapi import FastAPI, File, Query, UploadFile
+from fastapi.responses import Response
+from PIL import Image
 
 app = FastAPI()
 
-@app.get("/")
-def root():
-    return {
-        "message": "QR Code Generator API is running!",
-        "available_shapes": DOT_SHAPES,
-        "endpoint": "POST /generate"
-    }
-
-@app.post("/generate")
+@app.post("/qr")
 async def generate_qr(
-    data: str = Query(..., description="Text or URL to encode"),
-    logo: Optional[UploadFile] = File(None, description="Logo file (PNG, JPG, etc.) - optional"),
-    size: int = Query(DEFAULT_SIZE, description="Box size"),
-    border: int = Query(DEFAULT_BORDER, description="Border size"),
-    fg_color: str = Query("black", description="Dot color — name or hex e.g. red / %23ff0000"),
-    bg_color: str = Query("white", description="Background color — name or hex"),
-    gradient_color: str = Query(None, description="Second gradient color — name or hex (optional)"),
-    gradient_type: str = Query(DEFAULT_GRADIENT, description="horizontal | vertical | diagonal | diagonal_reverse | center | center_reverse"),
-    eye_outer: str = Query(None, description="Outer eye color — name or hex (optional)"),
-    eye_inner: str = Query(None, description="Inner eye color — name or hex (optional)"),
-    dot_shape: str = Query(DEFAULT_SHAPE, description="square | circle | dot | rounded | smooth | diamond | diamond_small | star4 | star5 | cross | heart | triangle_up | triangle_down | hexagon | octagon | arrow_right | vertical_line | horizontal_line | x_shape | ring | bars"),
-    logo_size: int = Query(25, description="Logo size as percentage of QR code (10-40)"),
+    text: str = Query(..., description="Text to encode"),
+    logo: UploadFile = File(None, description="Optional logo image"),
 ):
-    logo_bytes = None
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_H)
+    qr.add_data(text)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+
     if logo:
-        logo_bytes = await logo.read()
-    
-    buffer = build_qr_image(
-        data=data,
-        size=size,
-        border=border,
-        fg_color=fg_color,
-        bg_color=bg_color,
-        gradient_color=gradient_color,
-        gradient_type=gradient_type,
-        eye_outer=eye_outer,
-        eye_inner=eye_inner,
-        dot_shape=dot_shape,
-        logo_bytes=logo_bytes,
-        logo_size=logo_size,
-    )
-    return StreamingResponse(buffer, media_type="image/png")
+        logo_img = Image.open(io.BytesIO(await logo.read())).convert("RGBA")
+
+        # Resize logo to 25% of QR code
+        qr_w, qr_h = img.size
+        logo_size = int(qr_w * 0.25)
+        logo_img.thumbnail((logo_size, logo_size), Image.LANCZOS)
+        lw, lh = logo_img.size
+
+        # White background to kill dots under logo
+        padding = 10
+        white_bg = Image.new("RGB", (lw + padding * 2, lh + padding * 2), "white")
+        bg_pos = ((qr_w - white_bg.width) // 2, (qr_h - white_bg.height) // 2)
+        img.paste(white_bg, bg_pos)
+
+        # Center logo on top
+        pos = ((qr_w - lw) // 2, (qr_h - lh) // 2)
+        img.paste(logo_img, pos, mask=logo_img)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return Response(content=buf.getvalue(), media_type="image/png")
 
 if __name__ == "__main__":
     import uvicorn
