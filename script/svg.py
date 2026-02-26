@@ -2,7 +2,9 @@
 import cairosvg
 from pathlib import Path
 
-folders = [Path("api/inner"), Path("api/outer")]
+folders = [Path("api/inner"), 
+           Path("api/outer"),
+           Path("api/icon")]
 
 for folder in folders:
     for svg in folder.glob("*.svg"):
