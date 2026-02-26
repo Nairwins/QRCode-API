@@ -27,6 +27,11 @@ async def generate_qr(
     # Dot style
     dot_style: str = Query("square", description="square | dot | block | rounded | diamond | smooth | vertical | horizontal | aura"),
 
+    # Output format
+    fmt: str = Query("png", description="Output format: png | svg"),
+    filename: str = Query("qrcode", description="Output filename without extension"),
+    download: bool = Query(False, description="If true, triggers file download instead of inline display"),
+
     # Logo size
     icon_size: float = Query(0.25, ge=0.10, le=0.40, description="Logo size as fraction of QR width (0.10–0.40)"),
 
@@ -72,17 +77,29 @@ async def generate_qr(
     inner = parse_color(inner_eye_color) if inner_eye_color else body
     grad  = parse_color(gradient_color)  if gradient_color  else None
 
-    return Response(
-        content=build_qr(
-            text, logo_bytes,
-            body, bg, outer, inner,
-            outer_png, inner_png,
-            grad, gradient_type,
-            dot_style,
-            logo_size_ratio=icon_size,
-        ),
-        media_type="image/png",
+    png_bytes = build_qr(
+        text, logo_bytes,
+        body, bg, outer, inner,
+        outer_png, inner_png,
+        grad, gradient_type,
+        dot_style,
+        logo_size_ratio=icon_size,
     )
+
+    if fmt == "svg":
+        import base64
+        b64 = base64.b64encode(png_bytes).decode()
+        svg = f'''<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 500" width="500" height="500">
+  <image href="data:image/png;base64,{b64}" width="500" height="500"/>
+</svg>'''
+        disposition = f"attachment; filename={filename}.svg" if download else f"inline; filename={filename}.svg"
+        return Response(content=svg.encode(), media_type="image/svg+xml",
+                        headers={"Content-Disposition": disposition})
+
+    disposition = f"attachment; filename={filename}.png" if download else f"inline; filename={filename}.png"
+    return Response(content=png_bytes, media_type="image/png",
+                    headers={"Content-Disposition": disposition})
 
 if __name__ == "__main__":
     import uvicorn
