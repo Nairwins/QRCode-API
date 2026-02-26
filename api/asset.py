@@ -1,15 +1,24 @@
 from pathlib import Path
 from PIL import ImageColor
 
-ICON_DIR = Path(__file__).parent / "icon"
+ICON_DIR  = Path(__file__).parent / "icon"
+INNER_DIR = Path(__file__).parent / "inner"
+OUTER_DIR = Path(__file__).parent / "outer"
 
 ICONS = {
-    "gold": ICON_DIR / "gold.png",
-    "laser": ICON_DIR / "laser.png",
+    "gold":  ICON_DIR  / "gold.png",
+    "laser": ICON_DIR  / "laser.png",
+}
+
+INNER_EYES = {
+    "flower": INNER_DIR / "flower.png",
+}
+
+OUTER_EYES = {
+    "eye": OUTER_DIR / "eye.png",
 }
 
 def parse_color(value: str, fallback: str = "black") -> tuple:
-    """Accept #hex, hex without #, or named colors like 'red'. Falls back to black."""
     if not value:
         return ImageColor.getrgb(fallback)
     try:
