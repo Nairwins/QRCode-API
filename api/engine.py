@@ -181,6 +181,7 @@ def build_qr(
     gradient_type:   str   = None,
     dot_style:       str   = "square",
     logo_size_ratio: float = 0.25,
+    border:          int   = 4,
 ) -> bytes:
     def to_hex(rgb): return "#{:02x}{:02x}{:02x}".format(*rgb)
 
@@ -190,7 +191,7 @@ def build_qr(
     qr = qrcode.QRCode(
         error_correction=qrcode.constants.ERROR_CORRECT_H,
         box_size=box_s,
-        border=4,
+        border=border,
     )
     qr.add_data(text)
     qr.make(fit=True)
